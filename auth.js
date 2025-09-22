@@ -90,16 +90,34 @@ class HouseholdAuth {
 
                         <button type="submit" class="btn btn-primary btn-full">Create Household Account</button>
                     </form>
+
+                    <div class="auth-divider">
+                        <span>OR</span>
+                    </div>
+
+                    <form id="join-household-form" class="auth-form">
+                        <div class="form-group">
+                            <label class="form-label">Join Existing Household</label>
+                            <input type="text" class="form-input" name="shareCode" placeholder="Enter share code" maxlength="8" style="text-transform: uppercase;">
+                            <small class="form-help">Enter the 8-character code from your partner</small>
+                        </div>
+                        <button type="submit" class="btn btn-secondary btn-full">Join Household</button>
+                    </form>
                 </div>
             </div>
         `;
 
         document.body.insertAdjacentHTML('beforeend', setupHTML);
 
-        // Handle form submission
+        // Handle form submissions
         document.getElementById('household-setup-form').addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleHouseholdSetup(e.target);
+        });
+
+        document.getElementById('join-household-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleJoinHousehold(e.target);
         });
     }
 
@@ -198,6 +216,102 @@ class HouseholdAuth {
         this.authenticateUser();
 
         this.app.showToast(`Welcome to ${householdData.householdName}!`);
+    }
+
+    handleJoinHousehold(form) {
+        const formData = new FormData(form);
+        const shareCode = formData.get('shareCode').toUpperCase();
+
+        const shareData = localStorage.getItem(`pbj-share-${shareCode}`);
+
+        if (shareData) {
+            try {
+                const parsed = JSON.parse(shareData);
+
+                if (parsed.expiresAt > Date.now()) {
+                    // Valid share code - copy the household data
+                    localStorage.setItem('pbj-household', JSON.stringify(parsed.householdData));
+
+                    // Show user selection for who is joining
+                    this.showUserSelectionForJoin(parsed.householdData);
+                } else {
+                    // Expired
+                    localStorage.removeItem(`pbj-share-${shareCode}`);
+                    this.app.showToast('Share code has expired. Please ask for a new one.');
+                }
+            } catch (error) {
+                this.app.showToast('Invalid share code format.');
+            }
+        } else {
+            this.app.showToast('Share code not found. Please check the code and try again.');
+        }
+    }
+
+    showUserSelectionForJoin(householdData) {
+        const joinHTML = `
+            <div class="auth-overlay">
+                <div class="auth-container">
+                    <div class="auth-header">
+                        <h1>🥜🍓 ${householdData.householdName}</h1>
+                        <p>Welcome! Who are you?</p>
+                    </div>
+
+                    <div class="user-selection">
+                        <button class="user-btn" data-user="${householdData.partner1}">
+                            <div class="user-avatar">👤</div>
+                            <div class="user-name">${householdData.partner1}</div>
+                        </button>
+                        <button class="user-btn" data-user="${householdData.partner2}">
+                            <div class="user-avatar">👤</div>
+                            <div class="user-name">${householdData.partner2}</div>
+                        </button>
+                    </div>
+
+                    <form id="join-pin-form" class="auth-form" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">Enter Household PIN</label>
+                            <input type="password" class="form-input" id="join-pin-input" placeholder="Enter PIN" maxlength="6" pattern="[0-9]*" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">Join Household</button>
+                        <button type="button" class="btn btn-secondary btn-full" onclick="location.reload()">Back</button>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        // Remove existing overlay
+        const existing = document.querySelector('.auth-overlay');
+        if (existing) existing.remove();
+
+        document.body.insertAdjacentHTML('beforeend', joinHTML);
+
+        // Handle user selection
+        document.querySelectorAll('.user-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const selectedUser = e.currentTarget.dataset.user;
+                this.selectedUser = selectedUser;
+
+                document.querySelector('.user-selection').style.display = 'none';
+                document.getElementById('join-pin-form').style.display = 'block';
+                document.querySelector('.auth-header p').textContent = `Hi ${selectedUser}! Enter the household PIN:`;
+            });
+        });
+
+        // Handle PIN submission
+        document.getElementById('join-pin-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const pin = document.getElementById('join-pin-input').value;
+            const householdData = JSON.parse(localStorage.getItem('pbj-household'));
+
+            if (this.verifyPin(pin, householdData.pin)) {
+                this.currentUser = this.selectedUser;
+                this.authenticateUser();
+                this.app.showToast(`Welcome to ${householdData.householdName}, ${this.currentUser}!`);
+            } else {
+                this.app.showToast('Incorrect PIN. Please try again.');
+                document.getElementById('join-pin-input').value = '';
+            }
+        });
     }
 
     handleLogin() {

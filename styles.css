@@ -990,6 +990,30 @@ body {
     margin-bottom: 24px;
 }
 
+.auth-divider {
+    text-align: center;
+    margin: 24px 0;
+    position: relative;
+}
+
+.auth-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #e5e7eb;
+}
+
+.auth-divider span {
+    background: #ffffff;
+    padding: 0 16px;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+}
+
 .form-help {
     color: #6b7280;
     font-size: 12px;
@@ -1111,5 +1135,14 @@ body {
 
     .link-btn:hover {
         color: #ffffff;
+    }
+
+    .auth-divider::before {
+        background: #4b5563;
+    }
+
+    .auth-divider span {
+        background: #1a1a1a;
+        color: #d1d5db;
     }
 }

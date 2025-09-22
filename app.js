@@ -903,10 +903,13 @@ class PeanutButterJelly {
                         <input type="checkbox" id="notifications" ${this.data.settings.notifications ? 'checked' : ''}>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Household Members</label>
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; font-size: 14px;">
-                            Both ${this.data.settings.partner1 || 'Partner 1'} and ${this.data.settings.partner2 || 'Partner 2'} can access this account using the household PIN.
+                        <label class="form-label">Share with Partner</label>
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 12px;">
+                            Share this household account with ${this.data.settings.partner1 === window.auth.getCurrentUser() ? this.data.settings.partner2 : this.data.settings.partner1} on their device.
                         </div>
+                        <button type="button" class="btn btn-secondary btn-full" onclick="app.generateShareCode()">
+                            Generate Share Code for Partner
+                        </button>
                     </div>
                     <div class="form-group">
                         <button type="button" class="btn btn-secondary btn-full" onclick="window.auth.logout()">
@@ -984,6 +987,96 @@ class PeanutButterJelly {
             <span>Logged in as ${currentUser}</span>
             <button class="link-btn" onclick="window.auth.logout()" style="margin-left: 8px;">Switch User</button>
         `;
+    }
+
+    generateShareCode() {
+        // Generate a share code for the household
+        const shareCode = Math.random().toString(36).substr(2, 8).toUpperCase();
+        const householdData = JSON.parse(localStorage.getItem('pbj-household'));
+
+        const shareData = {
+            code: shareCode,
+            householdData: householdData,
+            createdAt: Date.now(),
+            expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
+            createdBy: window.auth.getCurrentUser()
+        };
+
+        // Store the share code
+        localStorage.setItem(`pbj-share-${shareCode}`, JSON.stringify(shareData));
+
+        // Show the share code to the user
+        const modal = this.createShareCodeModal(shareCode);
+        document.getElementById('modal-container').appendChild(modal);
+
+        requestAnimationFrame(() => {
+            modal.classList.add('active');
+        });
+
+        // Copy to clipboard if available
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(shareCode);
+        }
+    }
+
+    createShareCodeModal(shareCode) {
+        const partnerName = this.data.settings.partner1 === window.auth.getCurrentUser() ?
+            this.data.settings.partner2 : this.data.settings.partner1;
+
+        const modalDiv = document.createElement('div');
+        modalDiv.className = 'modal-overlay';
+        modalDiv.innerHTML = `
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">Share Household Account</h2>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <div style="text-align: center;">
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                        <div style="font-size: 24px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px;">
+                            ${shareCode}
+                        </div>
+                        <div style="font-size: 14px; color: #6b7280;">
+                            Share Code (expires in 24 hours)
+                        </div>
+                    </div>
+
+                    <div style="background: #eff6ff; padding: 16px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
+                        <div style="font-weight: 600; margin-bottom: 8px;">📱 Instructions for ${partnerName}:</div>
+                        <ol style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
+                            <li>Open the app on their device</li>
+                            <li>When they see the setup screen, look for "Join Existing Household"</li>
+                            <li>Enter this code: <strong>${shareCode}</strong></li>
+                            <li>They'll have access to all the same data!</li>
+                        </ol>
+                    </div>
+
+                    <button type="button" class="btn btn-primary btn-full" onclick="app.copyShareCode('${shareCode}')">
+                        📋 Copy Code
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-full" onclick="closeModal()" style="margin-top: 8px;">
+                        Done
+                    </button>
+                </div>
+            </div>
+        `;
+        return modalDiv;
+    }
+
+    copyShareCode(shareCode) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(shareCode);
+            this.showToast('Share code copied to clipboard!');
+        } else {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = shareCode;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            this.showToast('Share code copied!');
+        }
     }
 
     resetApp() {
