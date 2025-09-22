@@ -958,6 +958,7 @@ body {
     align-items: center;
     justify-content: center;
     padding: 20px;
+    overflow-y: auto;
 }
 
 .auth-container {
@@ -966,6 +967,8 @@ body {
     padding: 32px;
     width: 100%;
     max-width: 400px;
+    max-height: 90vh;
+    overflow-y: auto;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
@@ -1144,5 +1147,43 @@ body {
     .auth-divider span {
         background: #1a1a1a;
         color: #d1d5db;
+    }
+}
+
+/* Mobile auth improvements */
+@media (max-height: 800px) {
+    .auth-overlay {
+        align-items: flex-start;
+        padding: 10px;
+    }
+
+    .auth-container {
+        margin: 20px 0;
+        padding: 24px;
+        max-height: calc(100vh - 40px);
+    }
+
+    .auth-header {
+        margin-bottom: 24px;
+    }
+
+    .auth-header h1 {
+        font-size: 24px;
+    }
+}
+
+@media (max-height: 600px) {
+    .auth-container {
+        margin: 10px 0;
+        padding: 16px;
+        max-height: calc(100vh - 20px);
+    }
+
+    .auth-header {
+        margin-bottom: 16px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
     }
 }
