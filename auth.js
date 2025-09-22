@@ -262,10 +262,26 @@ class HouseholdAuth {
     }
 
     resetHousehold() {
-        if (confirm('This will delete all household data. Are you sure?')) {
+        const confirmed = confirm('⚠️ Reset Household Account?\n\nThis will delete:\n• Household login\n• All bills and data\n• Both user accounts\n\nYou\'ll need to set up the household again. Continue?');
+
+        if (confirmed) {
+            // Clear all data
             localStorage.removeItem('pbj-household');
             localStorage.removeItem('pbj-auth');
             localStorage.removeItem('pbj-data');
+            localStorage.removeItem('pbj-sync');
+            localStorage.removeItem('pbj-cloud-backup');
+            localStorage.removeItem('pbj-device-id');
+            localStorage.removeItem('pbj-last-sync');
+
+            // Clear any share codes
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('pbj-share-')) {
+                    localStorage.removeItem(key);
+                }
+            });
+
+            alert('✅ Household reset! Setting up fresh account...');
             location.reload();
         }
     }

@@ -913,6 +913,13 @@ class PeanutButterJelly {
                             Switch User / Logout
                         </button>
                     </div>
+                    <div class="form-group" style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 20px;">
+                        <label class="form-label" style="color: #ef4444;">Danger Zone</label>
+                        <button type="button" class="btn btn-danger btn-full" onclick="app.resetApp()">
+                            Reset App - Clear All Data
+                        </button>
+                        <small class="form-help" style="color: #ef4444;">This will delete everything and start fresh. Cannot be undone!</small>
+                    </div>
                     ${this.canInstallPWA() ? `
                     <div class="form-group">
                         <button type="button" class="btn btn-secondary btn-full" onclick="installPWA()">
@@ -977,6 +984,39 @@ class PeanutButterJelly {
             <span>Logged in as ${currentUser}</span>
             <button class="link-btn" onclick="window.auth.logout()" style="margin-left: 8px;">Switch User</button>
         `;
+    }
+
+    resetApp() {
+        const confirmed = confirm('⚠️ This will permanently delete ALL data including:\n\n• Household account\n• All bills\n• Income settings\n• Login information\n\nThis cannot be undone! Are you absolutely sure?');
+
+        if (confirmed) {
+            const doubleConfirm = confirm('Last chance! This will wipe everything clean. Click OK to proceed or Cancel to keep your data.');
+
+            if (doubleConfirm) {
+                // Clear all storage
+                localStorage.removeItem('pbj-household');
+                localStorage.removeItem('pbj-auth');
+                localStorage.removeItem('pbj-data');
+                localStorage.removeItem('pbj-sync');
+                localStorage.removeItem('pbj-cloud-backup');
+                localStorage.removeItem('pbj-device-id');
+                localStorage.removeItem('pbj-last-sync');
+
+                // Clear any share codes
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('pbj-share-')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+
+                this.showToast('App reset successfully! Reloading...');
+
+                // Reload the page after a short delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            }
+        }
     }
 }
 
