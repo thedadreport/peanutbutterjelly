@@ -17,6 +17,15 @@ class PeanutButterJelly {
     }
 
     init() {
+        // Initialize authentication first
+        window.auth = new HouseholdAuth(this);
+        window.auth.init();
+
+        // Only proceed if authenticated
+        if (!window.auth.isUserAuthenticated()) {
+            return; // Auth system will handle login/setup
+        }
+
         this.loadData();
         this.registerServiceWorker();
         this.setupEventListeners();
@@ -104,7 +113,16 @@ class PeanutButterJelly {
 
     saveData() {
         this.data.lastModified = Date.now();
-        localStorage.setItem('pbj-data', JSON.stringify(this.data));
+
+        // Save to household account if authenticated
+        if (window.auth && window.auth.isUserAuthenticated()) {
+            const householdData = JSON.parse(localStorage.getItem('pbj-household'));
+            householdData.data = this.data;
+            localStorage.setItem('pbj-household', JSON.stringify(householdData));
+        } else {
+            // Fallback to old storage method
+            localStorage.setItem('pbj-data', JSON.stringify(this.data));
+        }
 
         // Sync with other devices if online
         if (navigator.onLine && this.syncManager) {
@@ -314,6 +332,9 @@ class PeanutButterJelly {
         // Update period display
         const periodText = `${this.formatDate(period.start, 'MMM d')} – ${this.formatDate(period.end, 'd, yyyy')}`;
         document.getElementById('current-period').textContent = periodText;
+
+        // Add current user indicator
+        this.updateCurrentUserDisplay();
 
         if (this.currentView === 'overview') {
             this.renderOverview();
@@ -882,14 +903,14 @@ class PeanutButterJelly {
                         <input type="checkbox" id="notifications" ${this.data.settings.notifications ? 'checked' : ''}>
                     </div>
                     <div class="form-group">
-                        <button type="button" class="btn btn-secondary btn-full" onclick="app.generateShareCode()">
-                            Share with Partner
-                        </button>
+                        <label class="form-label">Household Members</label>
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; font-size: 14px;">
+                            Both ${this.data.settings.partner1 || 'Partner 1'} and ${this.data.settings.partner2 || 'Partner 2'} can access this account using the household PIN.
+                        </div>
                     </div>
                     <div class="form-group">
-                        <input type="text" class="form-input" id="share-code" placeholder="Enter share code">
-                        <button type="button" class="btn btn-secondary btn-full" onclick="app.joinHousehold()" style="margin-top: 8px;">
-                            Join Household
+                        <button type="button" class="btn btn-secondary btn-full" onclick="window.auth.logout()">
+                            Switch User / Logout
                         </button>
                     </div>
                     ${this.canInstallPWA() ? `
@@ -910,29 +931,6 @@ class PeanutButterJelly {
         return modalDiv;
     }
 
-    generateShareCode() {
-        const shareCode = this.syncManager.generateShareCode();
-        this.showToast(`Share code: ${shareCode} (valid for 24 hours)`);
-
-        // Copy to clipboard if available
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(shareCode);
-            this.showToast('Share code copied to clipboard');
-        }
-    }
-
-    joinHousehold() {
-        const shareCode = document.getElementById('share-code').value;
-        if (shareCode) {
-            try {
-                this.syncManager.joinWithShareCode(shareCode);
-                this.showToast('Successfully joined household!');
-                this.closeModal();
-            } catch (error) {
-                this.showToast(error.message);
-            }
-        }
-    }
 
     saveSettings() {
         const householdName = document.getElementById('household-name').value;
@@ -958,6 +956,27 @@ class PeanutButterJelly {
 
     canInstallPWA() {
         return window.deferredPrompt !== null;
+    }
+
+    updateCurrentUserDisplay() {
+        if (!window.auth || !window.auth.isUserAuthenticated()) return;
+
+        const currentUser = window.auth.getCurrentUser();
+        let userIndicator = document.querySelector('.current-user');
+
+        if (!userIndicator) {
+            userIndicator = document.createElement('div');
+            userIndicator.className = 'current-user';
+            document.querySelector('.period-header').insertBefore(userIndicator, document.querySelector('.period-info'));
+        }
+
+        const initials = currentUser.split(' ').map(n => n[0]).join('').toUpperCase();
+
+        userIndicator.innerHTML = `
+            <div class="current-user-avatar">${initials}</div>
+            <span>Logged in as ${currentUser}</span>
+            <button class="link-btn" onclick="window.auth.logout()" style="margin-left: 8px;">Switch User</button>
+        `;
     }
 }
 
