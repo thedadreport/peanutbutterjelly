@@ -298,20 +298,22 @@ body {
 
 .bill-edit-btn,
 .bill-delete-btn {
-    background: none;
+    background: #f3f4f6;
     border: none;
-    padding: 6px;
-    border-radius: 4px;
+    padding: 8px;
+    border-radius: 6px;
     cursor: pointer;
     color: #6b7280;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 32px;
+    min-height: 32px;
 }
 
 .bill-edit-btn:hover {
-    background: #f3f4f6;
+    background: #e5e7eb;
     color: #1a1a1a;
 }
 
@@ -869,11 +871,12 @@ body {
 
     .bill-edit-btn,
     .bill-delete-btn {
+        background: #374151;
         color: #9ca3af;
     }
 
     .bill-edit-btn:hover {
-        background: #374151;
+        background: #4b5563;
         color: #ffffff;
     }
 
