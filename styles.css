@@ -277,12 +277,47 @@ body {
     color: #6b7280;
 }
 
+.bill-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .bill-amount {
     font-size: 16px;
     font-weight: 600;
     color: #1a1a1a;
-    margin-right: 16px;
     font-variant-numeric: tabular-nums;
+}
+
+.bill-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bill-edit-btn,
+.bill-delete-btn {
+    background: none;
+    border: none;
+    padding: 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bill-edit-btn:hover {
+    background: #f3f4f6;
+    color: #1a1a1a;
+}
+
+.bill-delete-btn:hover {
+    background: #fef2f2;
+    color: #dc2626;
 }
 
 .bill-status {
@@ -830,6 +865,21 @@ body {
 
     .bill-amount {
         color: #ffffff !important;
+    }
+
+    .bill-edit-btn,
+    .bill-delete-btn {
+        color: #9ca3af;
+    }
+
+    .bill-edit-btn:hover {
+        background: #374151;
+        color: #ffffff;
+    }
+
+    .bill-delete-btn:hover {
+        background: #7f1d1d;
+        color: #fca5a5;
     }
 
     .bill-item:hover {

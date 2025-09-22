@@ -257,12 +257,7 @@ class PeanutButterJelly {
             }
         });
 
-        // Bill interactions
-        document.addEventListener('click', (e) => {
-            if (e.target.closest('.bill-item')) {
-                this.toggleBillStatus(e.target.closest('.bill-item'));
-            }
-        });
+        // Prevent default bill item click since we now have specific buttons
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -390,8 +385,22 @@ class PeanutButterJelly {
                 <div class="bill-name">${bill.name} ${frequencyIcon}</div>
                 <div class="bill-due">${dueText}</div>
             </div>
-            <div class="bill-amount">${this.formatCurrency(bill.amount)}</div>
-            <div class="bill-status ${statusClass}"></div>
+            <div class="bill-actions">
+                <div class="bill-amount">${this.formatCurrency(bill.amount)}</div>
+                <div class="bill-controls">
+                    <button class="bill-edit-btn" onclick="app.editBill(${bill.id})" title="Edit bill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                        </svg>
+                    </button>
+                    <button class="bill-delete-btn" onclick="app.deleteBill(${bill.id})" title="Delete bill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    </button>
+                    <div class="bill-status ${statusClass}" onclick="app.toggleBillStatus(${bill.id})"></div>
+                </div>
+            </div>
         `;
 
         return billDiv;
@@ -561,17 +570,48 @@ class PeanutButterJelly {
     }
 
     // Bill Management
-    toggleBillStatus(billElement) {
-        const billId = parseInt(billElement.dataset.billId);
+    toggleBillStatus(billId) {
         const bill = this.data.bills.find(b => b.id === billId);
 
-        if (bill && !bill.isPaid) {
+        if (bill) {
             bill.isPaid = !bill.isPaid;
             this.saveData();
             this.renderCurrentView();
 
             // Show feedback
             this.showToast(`${bill.name} marked as ${bill.isPaid ? 'paid' : 'unpaid'}`);
+        }
+    }
+
+    editBill(billId) {
+        const bill = this.data.bills.find(b => b.id === billId);
+        if (bill) {
+            const modal = this.createEditBillModal(bill);
+            document.getElementById('modal-container').appendChild(modal);
+
+            requestAnimationFrame(() => {
+                modal.classList.add('active');
+            });
+        }
+    }
+
+    deleteBill(billId) {
+        const bill = this.data.bills.find(b => b.id === billId);
+        if (bill) {
+            const confirmed = confirm(`Delete "${bill.name}"?\n\nThis will remove the bill and cannot be undone.`);
+            if (confirmed) {
+                // Remove the bill
+                this.data.bills = this.data.bills.filter(b => b.id !== billId);
+
+                // If it's a recurring bill, also remove future instances
+                if (bill.isRecurring) {
+                    this.data.bills = this.data.bills.filter(b => b.parentBillId !== billId);
+                }
+
+                this.saveData();
+                this.renderCurrentView();
+                this.showToast(`${bill.name} deleted`);
+            }
         }
     }
 
@@ -645,6 +685,72 @@ class PeanutButterJelly {
         return modalDiv;
     }
 
+    createEditBillModal(bill) {
+        const modalDiv = document.createElement('div');
+        modalDiv.className = 'modal-overlay';
+        modalDiv.innerHTML = `
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">Edit Bill</h2>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <form id="edit-bill-form">
+                    <input type="hidden" name="billId" value="${bill.id}">
+                    <div class="form-group">
+                        <label class="form-label">Bill Name</label>
+                        <input type="text" class="form-input" name="name" value="${bill.name}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Amount</label>
+                        <input type="number" class="form-input" name="amount" step="0.01" value="${bill.amount}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Due Date</label>
+                        <input type="date" class="form-input" name="dueDate" value="${bill.dueDate.toISOString().split('T')[0]}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Frequency</label>
+                        <select class="form-select" name="frequency" required>
+                            <option value="once" ${bill.frequency === 'once' ? 'selected' : ''}>One Time</option>
+                            <option value="weekly" ${bill.frequency === 'weekly' ? 'selected' : ''}>Weekly</option>
+                            <option value="biweekly" ${bill.frequency === 'biweekly' ? 'selected' : ''}>Biweekly</option>
+                            <option value="monthly" ${bill.frequency === 'monthly' ? 'selected' : ''}>Monthly</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" name="category" required>
+                            <option value="">Select category</option>
+                            <option value="Housing" ${bill.category === 'Housing' ? 'selected' : ''}>Housing</option>
+                            <option value="Transportation" ${bill.category === 'Transportation' ? 'selected' : ''}>Transportation</option>
+                            <option value="Utilities" ${bill.category === 'Utilities' ? 'selected' : ''}>Utilities</option>
+                            <option value="Insurance" ${bill.category === 'Insurance' ? 'selected' : ''}>Insurance</option>
+                            <option value="Food" ${bill.category === 'Food' ? 'selected' : ''}>Food</option>
+                            <option value="Entertainment" ${bill.category === 'Entertainment' ? 'selected' : ''}>Entertainment</option>
+                            <option value="Other" ${bill.category === 'Other' ? 'selected' : ''}>Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-full">Update Bill</button>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-danger btn-full" onclick="app.deleteBill(${bill.id}); closeModal();">
+                            Delete Bill
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        // Add form submit handler
+        modalDiv.querySelector('#edit-bill-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleEditBill(e.target);
+        });
+
+        return modalDiv;
+    }
+
     handleAddBill(form) {
         const formData = new FormData(form);
         const frequency = formData.get('frequency');
@@ -669,6 +775,43 @@ class PeanutButterJelly {
         // Generate future instances for recurring bills
         if (bill.isRecurring) {
             this.generateRecurringBills(bill);
+        }
+    }
+
+    handleEditBill(form) {
+        const formData = new FormData(form);
+        const billId = parseInt(formData.get('billId'));
+        const bill = this.data.bills.find(b => b.id === billId);
+
+        if (bill) {
+            const oldFrequency = bill.frequency;
+            const newFrequency = formData.get('frequency');
+
+            // Update bill properties
+            bill.name = formData.get('name');
+            bill.amount = parseFloat(formData.get('amount'));
+            bill.dueDate = new Date(formData.get('dueDate'));
+            bill.category = formData.get('category');
+            bill.frequency = newFrequency;
+            bill.isRecurring = newFrequency !== 'once';
+
+            // If frequency changed, handle recurring bill instances
+            if (oldFrequency !== newFrequency) {
+                if (oldFrequency !== 'once' && bill.isRecurring) {
+                    // Remove old recurring instances
+                    this.data.bills = this.data.bills.filter(b => b.parentBillId !== billId);
+                }
+
+                if (bill.isRecurring) {
+                    // Generate new recurring instances
+                    this.generateRecurringBills(bill);
+                }
+            }
+
+            this.saveData();
+            this.closeModal();
+            this.renderCurrentView();
+            this.showToast(`${bill.name} updated successfully`);
         }
     }
 
