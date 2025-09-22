@@ -98,8 +98,8 @@ class HouseholdAuth {
                     <form id="join-household-form" class="auth-form">
                         <div class="form-group">
                             <label class="form-label">Join Existing Household</label>
-                            <input type="text" class="form-input" name="shareCode" placeholder="Enter share code" maxlength="8" style="text-transform: uppercase;">
-                            <small class="form-help">Enter the 8-character code from your partner</small>
+                            <textarea class="form-input" name="shareCode" placeholder="Paste the share code from your partner" rows="3" style="resize: vertical; font-family: monospace; font-size: 12px;"></textarea>
+                            <small class="form-help">Paste the full share code your partner copied from Settings</small>
                         </div>
                         <button type="submit" class="btn btn-secondary btn-full">Join Household</button>
                     </form>
@@ -220,30 +220,26 @@ class HouseholdAuth {
 
     handleJoinHousehold(form) {
         const formData = new FormData(form);
-        const shareCode = formData.get('shareCode').toUpperCase();
+        const shareCode = formData.get('shareCode').trim();
 
-        const shareData = localStorage.getItem(`pbj-share-${shareCode}`);
+        try {
+            // Try to decode the share code (it's base64 encoded)
+            const decodedData = atob(shareCode);
+            const shareData = JSON.parse(decodedData);
 
-        if (shareData) {
-            try {
-                const parsed = JSON.parse(shareData);
+            // Check if the share code has expired
+            if (shareData.expiresAt && shareData.expiresAt > Date.now()) {
+                // Valid share code - copy the household data
+                localStorage.setItem('pbj-household', JSON.stringify(shareData.householdData));
 
-                if (parsed.expiresAt > Date.now()) {
-                    // Valid share code - copy the household data
-                    localStorage.setItem('pbj-household', JSON.stringify(parsed.householdData));
-
-                    // Show user selection for who is joining
-                    this.showUserSelectionForJoin(parsed.householdData);
-                } else {
-                    // Expired
-                    localStorage.removeItem(`pbj-share-${shareCode}`);
-                    this.app.showToast('Share code has expired. Please ask for a new one.');
-                }
-            } catch (error) {
-                this.app.showToast('Invalid share code format.');
+                // Show user selection for who is joining
+                this.showUserSelectionForJoin(shareData.householdData);
+            } else {
+                this.app.showToast('Share code has expired. Please ask for a new one.');
             }
-        } else {
-            this.app.showToast('Share code not found. Please check the code and try again.');
+        } catch (error) {
+            console.error('Share code decode error:', error);
+            this.app.showToast('Invalid share code. Please check the code and try again.');
         }
     }
 

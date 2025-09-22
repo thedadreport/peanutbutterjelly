@@ -990,36 +990,37 @@ class PeanutButterJelly {
     }
 
     generateShareCode() {
-        // Generate a share code for the household
-        const shareCode = Math.random().toString(36).substr(2, 8).toUpperCase();
         const householdData = JSON.parse(localStorage.getItem('pbj-household'));
 
         const shareData = {
-            code: shareCode,
             householdData: householdData,
             createdAt: Date.now(),
             expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
             createdBy: window.auth.getCurrentUser()
         };
 
-        // Store the share code
-        localStorage.setItem(`pbj-share-${shareCode}`, JSON.stringify(shareData));
+        // Encode the household data into the share code itself
+        const encodedData = btoa(JSON.stringify(shareData));
+
+        // Create a shorter, more user-friendly code by taking portions of the encoded data
+        const shortCode = encodedData.substr(0, 4) + encodedData.substr(-4);
+        const shareCode = shortCode.toUpperCase();
 
         // Show the share code to the user
-        const modal = this.createShareCodeModal(shareCode);
+        const modal = this.createShareCodeModal(shareCode, encodedData);
         document.getElementById('modal-container').appendChild(modal);
 
         requestAnimationFrame(() => {
             modal.classList.add('active');
         });
 
-        // Copy to clipboard if available
+        // Copy the full encoded data to clipboard (not just the short code)
         if (navigator.clipboard) {
-            navigator.clipboard.writeText(shareCode);
+            navigator.clipboard.writeText(encodedData);
         }
     }
 
-    createShareCodeModal(shareCode) {
+    createShareCodeModal(shareCode, encodedData) {
         const partnerName = this.data.settings.partner1 === window.auth.getCurrentUser() ?
             this.data.settings.partner2 : this.data.settings.partner1;
 
@@ -1033,11 +1034,14 @@ class PeanutButterJelly {
                 </div>
                 <div style="text-align: center;">
                     <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                        <div style="font-size: 24px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px;">
-                            ${shareCode}
+                        <div style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 12px;">
+                            Household Share Code
                         </div>
-                        <div style="font-size: 14px; color: #6b7280;">
-                            Share Code (expires in 24 hours)
+                        <div style="background: white; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 12px; word-break: break-all; border: 1px solid #e5e7eb; max-height: 100px; overflow-y: auto;">
+                            ${encodedData}
+                        </div>
+                        <div style="font-size: 12px; color: #6b7280; margin-top: 8px;">
+                            Expires in 24 hours
                         </div>
                     </div>
 
@@ -1045,14 +1049,14 @@ class PeanutButterJelly {
                         <div style="font-weight: 600; margin-bottom: 8px;">📱 Instructions for ${partnerName}:</div>
                         <ol style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
                             <li>Open the app on their device</li>
-                            <li>When they see the setup screen, look for "Join Existing Household"</li>
-                            <li>Enter this code: <strong>${shareCode}</strong></li>
-                            <li>They'll have access to all the same data!</li>
+                            <li>Scroll down to "Join Existing Household"</li>
+                            <li>Paste the entire code above</li>
+                            <li>Choose their name and enter the PIN</li>
                         </ol>
                     </div>
 
-                    <button type="button" class="btn btn-primary btn-full" onclick="app.copyShareCode('${shareCode}')">
-                        📋 Copy Code
+                    <button type="button" class="btn btn-primary btn-full" onclick="app.copyShareCode('${encodedData}')">
+                        📋 Copy Full Code
                     </button>
                     <button type="button" class="btn btn-secondary btn-full" onclick="closeModal()" style="margin-top: 8px;">
                         Done
@@ -1141,10 +1145,56 @@ const app = new PeanutButterJelly();
 let deferredPrompt;
 
 window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
     deferredPrompt = e;
-    // Show install button or banner
     console.log('PWA install prompt available');
+
+    // Show install banner if user isn't authenticated yet
+    if (!window.auth || !window.auth.isUserAuthenticated()) {
+        showInstallBanner();
+    }
 });
+
+function showInstallBanner() {
+    const banner = document.createElement('div');
+    banner.id = 'install-banner';
+    banner.style.cssText = `
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(90deg, #1a1a1a 0%, #2d3748 100%);
+        color: white;
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 1001;
+        font-size: 14px;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+    `;
+
+    banner.innerHTML = `
+        <div>
+            <div style="font-weight: 600; margin-bottom: 4px;">🥜🍓 Install Peanut Butter Jelly</div>
+            <div style="opacity: 0.8; font-size: 12px;">Add to home screen for the best experience</div>
+        </div>
+        <div>
+            <button onclick="installPWA()" style="background: white; color: #1a1a1a; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; margin-right: 8px; cursor: pointer;">Install</button>
+            <button onclick="dismissInstallBanner()" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 12px; border-radius: 6px; cursor: pointer;">✕</button>
+        </div>
+    `;
+
+    document.body.appendChild(banner);
+}
+
+function dismissInstallBanner() {
+    const banner = document.getElementById('install-banner');
+    if (banner) {
+        banner.remove();
+    }
+}
 
 // Handle app installation
 function installPWA() {
@@ -1152,7 +1202,33 @@ function installPWA() {
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then((choiceResult) => {
             console.log('PWA install result:', choiceResult.outcome);
+            if (choiceResult.outcome === 'accepted') {
+                dismissInstallBanner();
+                app.showToast('App installed successfully!');
+            }
             deferredPrompt = null;
         });
+    } else {
+        // Fallback instructions for manual installation
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+
+        let instructions = '';
+        if (isIOS) {
+            instructions = 'To install: Tap Share → Add to Home Screen';
+        } else if (isAndroid) {
+            instructions = 'To install: Tap Menu (⋮) → Add to Home Screen';
+        } else {
+            instructions = 'To install: Look for the install icon in your browser';
+        }
+
+        app.showToast(instructions);
     }
 }
+
+// Listen for successful installation
+window.addEventListener('appinstalled', (evt) => {
+    console.log('PWA was installed');
+    dismissInstallBanner();
+    app.showToast('Welcome! App installed successfully.');
+});
