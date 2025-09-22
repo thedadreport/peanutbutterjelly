@@ -1,0 +1,50 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="108" fill="#1a1a1a"/>
+
+  <!-- PB&J Sandwich Icon -->
+  <g transform="translate(128, 150)">
+    <!-- Bread (top) -->
+    <path d="M16 32 C16 16, 32 0, 48 0 L208 0 C224 0, 240 16, 240 32 L240 48 C240 56, 232 64, 224 64 L32 64 C24 64, 16 56, 16 48 Z" fill="#D4A574"/>
+
+    <!-- Peanut Butter -->
+    <rect x="16" y="64" width="224" height="24" fill="#C4831A" rx="4"/>
+
+    <!-- Jelly -->
+    <rect x="16" y="88" width="224" height="24" fill="#8B1A1A" rx="4"/>
+
+    <!-- Bread (bottom) -->
+    <path d="M16 112 L32 112 C24 112, 16 120, 16 128 L16 144 C16 160, 32 176, 48 176 L208 176 C224 176, 240 160, 240 144 L240 128 C240 120, 232 112, 224 112 Z" fill="#D4A574"/>
+
+    <!-- Dollar signs for cash flow -->
+    <text x="60" y="40" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#FFF">$</text>
+    <text x="180" y="40" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#FFF">$</text>
+
+    <!-- Biweekly indicator (calendar) -->
+    <rect x="80" y="200" width="96" height="80" fill="#FFF" rx="8" opacity="0.9"/>
+    <rect x="80" y="200" width="96" height="20" fill="#1a1a1a" rx="8 8 0 0"/>
+
+    <!-- Calendar grid -->
+    <g fill="#1a1a1a" opacity="0.6">
+      <rect x="88" y="230" width="8" height="8" rx="1"/>
+      <rect x="104" y="230" width="8" height="8" rx="1"/>
+      <rect x="120" y="230" width="8" height="8" rx="1"/>
+      <rect x="136" y="230" width="8" height="8" rx="1"/>
+      <rect x="152" y="230" width="8" height="8" rx="1"/>
+      <rect x="168" y="230" width="8" height="8" rx="1"/>
+
+      <rect x="88" y="246" width="8" height="8" rx="1"/>
+      <rect x="104" y="246" width="8" height="8" rx="1" fill="#C4831A"/>
+      <rect x="120" y="246" width="8" height="8" rx="1"/>
+      <rect x="136" y="246" width="8" height="8" rx="1"/>
+      <rect x="152" y="246" width="8" height="8" rx="1" fill="#8B1A1A"/>
+      <rect x="168" y="246" width="8" height="8" rx="1"/>
+
+      <rect x="88" y="262" width="8" height="8" rx="1"/>
+      <rect x="104" y="262" width="8" height="8" rx="1"/>
+      <rect x="120" y="262" width="8" height="8" rx="1"/>
+      <rect x="136" y="262" width="8" height="8" rx="1"/>
+      <rect x="152" y="262" width="8" height="8" rx="1"/>
+      <rect x="168" y="262" width="8" height="8" rx="1"/>
+    </g>
+  </g>
+</svg>

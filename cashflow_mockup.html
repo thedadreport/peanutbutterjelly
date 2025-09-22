@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peanut Butter Jelly - Cash Flow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background: #fafafa;
+            color: #1a1a1a;
+            line-height: 1.5;
+            font-weight: 400;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-container {
+            max-width: 414px;
+            margin: 0 auto;
+            background: #ffffff;
+            min-height: 100vh;
+            position: relative;
+            border-left: 1px solid #f0f0f0;
+            border-right: 1px solid #f0f0f0;
+        }
+
+        .status-bar {
+            height: 44px;
+            background: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 1px solid #f8f8f8;
+        }
+
+        .header {
+            padding: 32px 24px 0 24px;
+            background: #ffffff;
+        }
+
+        .nav-pills {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 32px;
+        }
+
+        .nav-pill {
+            flex: 1;
+            text-align: center;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6b7280;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-pill.active {
+            background: #ffffff;
+            color: #1a1a1a;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .period-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .period-info {
+            font-size: 15px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .period-nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        .period-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #e5e7eb;
+            background: #ffffff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .period-btn:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        /* Overview View */
+        .overview-view {
+            padding: 0 24px 120px 24px;
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d3748 100%);
+            border-radius: 20px;
+            padding: 32px 24px;
+            color: white;
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .balance-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            transform: translate(20px, -20px);
+        }
+
+        .balance-label {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .balance-amount {
+            font-size: 48px;
+            font-weight: 300;
+            letter-spacing: -2px;
+            margin-bottom: 4px;
+        }
+
+        .balance-change {
+            font-size: 13px;
+            opacity: 0.7;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .metric-card {
+            background: #ffffff;
+            border: 1px solid #f0f0f0;
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .metric-label {
+            font-size: 13px;
+            color: #6b7280;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .metric-amount {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .metric-trend {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
+        .bills-section {
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .add-bill {
+            font-size: 24px;
+            color: #6b7280;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .add-bill:hover {
+            color: #1a1a1a;
+        }
+
+        .bill-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #f8f8f8;
+        }
+
+        .bill-item:last-child {
+            border-bottom: none;
+        }
+
+        .bill-info {
+            flex: 1;
+        }
+
+        .bill-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+
+        .bill-due {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .bill-amount {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-right: 16px;
+        }
+
+        .bill-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e5e7eb;
+        }
+
+        .bill-status.paid {
+            background: #10b981;
+        }
+
+        .bill-status.due {
+            background: #f59e0b;
+        }
+
+        /* Calendar View */
+        .calendar-view {
+            padding: 0 24px 120px 24px;
+            display: none;
+        }
+
+        .calendar-view.active {
+            display: block;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #f0f0f0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 32px;
+        }
+
+        .calendar-header {
+            background: #f8f9fa;
+            padding: 12px 0;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .calendar-day {
+            background: #ffffff;
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 8px 4px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .calendar-day:hover {
+            background: #f9fafb;
+        }
+
+        .calendar-day.today {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .calendar-day.other-month {
+            color: #d1d5db;
+        }
+
+        .calendar-day.has-bill {
+            background: #fef3c7;
+        }
+
+        .calendar-day.has-bill.today {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .calendar-day.payday {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .calendar-day.payday.today {
+            background: #10b981;
+            color: white;
+        }
+
+        .day-number {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .day-indicator {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #6b7280;
+        }
+
+        .calendar-day.has-bill .day-indicator {
+            background: #f59e0b;
+        }
+
+        .calendar-day.payday .day-indicator {
+            background: #10b981;
+        }
+
+        .calendar-legend {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 24px;
+            padding: 0 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.bill {
+            background: #f59e0b;
+        }
+
+        .legend-dot.payday {
+            background: #10b981;
+        }
+
+        .legend-dot.today {
+            background: #1a1a1a;
+        }
+
+        .upcoming-events {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .event-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .event-item:last-child {
+            border-bottom: none;
+        }
+
+        .event-date {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .event-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .event-amount {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .event-amount.income {
+            color: #10b981;
+        }
+
+        .event-amount.expense {
+            color: #ef4444;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 414px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid #f0f0f0;
+            padding: 20px 0 32px 0;
+        }
+
+        .nav-items {
+            display: flex;
+            justify-content: space-around;
+            padding: 0 32px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .nav-item.active {
+            color: #1a1a1a;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-bottom: 6px;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        }
+
+        .nav-item.active .nav-icon {
+            opacity: 1;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 100px;
+            right: 24px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: #1a1a1a;
+            border: none;
+            color: white;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 8px 32px rgba(26, 26, 26, 0.12);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .fab:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 40px rgba(26, 26, 26, 0.16);
+        }
+
+        @media (max-width: 414px) {
+            .app-container {
+                border-left: none;
+                border-right: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div>9:41</div>
+            <div>Peanut Butter Jelly</div>
+            <div>100%</div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <div class="nav-pills">
+                <button class="nav-pill active" onclick="showView('overview')">Overview</button>
+                <button class="nav-pill" onclick="showView('calendar')">Calendar</button>
+            </div>
+
+            <div class="period-header">
+                <div class="period-info">Jan 15 – 28, 2025</div>
+                <div class="period-nav">
+                    <button class="period-btn">‹</button>
+                    <button class="period-btn">›</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overview View -->
+        <div class="overview-view" id="overview-view">
+            <div class="balance-card">
+                <div class="balance-label">Available Cash</div>
+                <div class="balance-amount">$1,247</div>
+                <div class="balance-change">+$340 from last period</div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-trend"></div>
+                    <div class="metric-label">Income</div>
+                    <div class="metric-amount">$2,100</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-trend" style="background: #ef4444;"></div>
+                    <div class="metric-label">Bills Due</div>
+                    <div class="metric-amount">$853</div>
+                </div>
+            </div>
+
+            <div class="bills-section">
+                <div class="section-title">
+                    This Period
+                    <div class="add-bill">+</div>
+                </div>
+
+                <div class="bill-item">
+                    <div class="bill-info">
+                        <div class="bill-name">Rent</div>
+                        <div class="bill-due">Due Jan 28</div>
+                    </div>
+                    <div class="bill-amount">$1,200</div>
+                    <div class="bill-status due"></div>
+                </div>
+
+                <div class="bill-item">
+                    <div class="bill-info">
+                        <div class="bill-name">Car Insurance</div>
+                        <div class="bill-due">Paid Jan 15</div>
+                    </div>
+                    <div class="bill-amount">$127</div>
+                    <div class="bill-status paid"></div>
+                </div>
+
+                <div class="bill-item">
+                    <div class="bill-info">
+                        <div class="bill-name">Phone Bill</div>
+                        <div class="bill-due">Due Jan 22</div>
+                    </div>
+                    <div class="bill-amount">$85</div>
+                    <div class="bill-status"></div>
+                </div>
+
+                <div class="bill-item">
+                    <div class="bill-info">
+                        <div class="bill-name">Utilities</div>
+                        <div class="bill-due">Due Jan 25</div>
+                    </div>
+                    <div class="bill-amount">$165</div>
+                    <div class="bill-status"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar View -->
+        <div class="calendar-view" id="calendar-view">
+            <div class="calendar-grid">
+                <!-- Calendar Headers -->
+                <div class="calendar-header">Sun</div>
+                <div class="calendar-header">Mon</div>
+                <div class="calendar-header">Tue</div>
+                <div class="calendar-header">Wed</div>
+                <div class="calendar-header">Thu</div>
+                <div class="calendar-header">Fri</div>
+                <div class="calendar-header">Sat</div>
+
+                <!-- Calendar Days -->
+                <div class="calendar-day other-month">
+                    <div class="day-number">29</div>
+                </div>
+                <div class="calendar-day other-month">
+                    <div class="day-number">30</div>
+                </div>
+                <div class="calendar-day other-month">
+                    <div class="day-number">31</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">1</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">2</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">3</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">4</div>
+                </div>
+
+                <div class="calendar-day">
+                    <div class="day-number">5</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">6</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">7</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">8</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">9</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">10</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">11</div>
+                </div>
+
+                <div class="calendar-day">
+                    <div class="day-number">12</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">13</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">14</div>
+                </div>
+                <div class="calendar-day payday">
+                    <div class="day-number">15</div>
+                    <div class="day-indicator"></div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">16</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">17</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">18</div>
+                </div>
+
+                <div class="calendar-day">
+                    <div class="day-number">19</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">20</div>
+                </div>
+                <div class="calendar-day today">
+                    <div class="day-number">21</div>
+                </div>
+                <div class="calendar-day has-bill">
+                    <div class="day-number">22</div>
+                    <div class="day-indicator"></div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">23</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">24</div>
+                </div>
+                <div class="calendar-day has-bill">
+                    <div class="day-number">25</div>
+                    <div class="day-indicator"></div>
+                </div>
+
+                <div class="calendar-day">
+                    <div class="day-number">26</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">27</div>
+                </div>
+                <div class="calendar-day has-bill">
+                    <div class="day-number">28</div>
+                    <div class="day-indicator"></div>
+                </div>
+                <div class="calendar-day payday">
+                    <div class="day-number">29</div>
+                    <div class="day-indicator"></div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">30</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">31</div>
+                </div>
+                <div class="calendar-day other-month">
+                    <div class="day-number">1</div>
+                </div>
+            </div>
+
+            <div class="calendar-legend">
+                <div class="legend-item">
+                    <div class="legend-dot today"></div>
+                    <span>Today</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot bill"></div>
+                    <span>Bills Due</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot payday"></div>
+                    <span>Payday</span>
+                </div>
+            </div>
+
+            <div class="upcoming-events">
+                <div class="section-title">Next 7 Days</div>
+                
+                <div class="event-item">
+                    <div>
+                        <div class="event-date">Tomorrow</div>
+                        <div class="event-name">Phone Bill</div>
+                    </div>
+                    <div class="event-amount expense">-$85</div>
+                </div>
+
+                <div class="event-item">
+                    <div>
+                        <div class="event-date">Jan 25</div>
+                        <div class="event-name">Utilities</div>
+                    </div>
+                    <div class="event-amount expense">-$165</div>
+                </div>
+
+                <div class="event-item">
+                    <div>
+                        <div class="event-date">Jan 28</div>
+                        <div class="event-name">Rent</div>
+                    </div>
+                    <div class="event-amount expense">-$1,200</div>
+                </div>
+
+                <div class="event-item">
+                    <div>
+                        <div class="event-date">Jan 29</div>
+                        <div class="event-name">Payday</div>
+                    </div>
+                    <div class="event-amount income">+$2,100</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <button class="fab">+</button>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <div class="nav-items">
+                <a href="#" class="nav-item active">
+                    <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                    </svg>
+                    Overview
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                    </svg>
+                    Calendar
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2v1a2 2 0 002 2h2a2 2 0 002-2V3a2 2 0 012 2v6h3a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm8 8a1 1 0 10-2 0v3a1 1 0 102 0v-3z" clip-rule="evenodd"/>
+                    </svg>
+                    Reports
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                    </svg>
+                    Settings
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        function showView(viewName) {
+            // Hide all views
+            document.getElementById('overview-view').style.display = 'none';
+            document.getElementById('calendar-view').style.display = 'none';
+
+            // Remove active class from all pills
+            document.querySelectorAll('.nav-pill').forEach(pill => {
+                pill.classList.remove('active');
+            });
+
+            // Show selected view and activate pill
+            if (viewName === 'overview') {
+                document.getElementById('overview-view').style.display = 'block';
+                document.querySelector('.nav-pill').classList.add('active');
+            } else if (viewName === 'calendar') {
+                document.getElementById('calendar-view').style.display = 'block';
+                document.querySelectorAll('.nav-pill')[1].classList.add('active');
+            }
+        }
+
+        // Add click handlers for bills
+        document.querySelectorAll('.bill-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const status = this.querySelector('.bill-status');
+                if (!status.classList.contains('paid')) {
+                    status.classList.toggle('paid');
+                    // Update balance logic would go here
+                }
+            });
+        });
+
+        // Add click handlers for calendar days
+        document.querySelectorAll('.calendar-day').forEach(day => {
+            day.addEventListener('click', function() {
+                // Show day details or bills
+                console.log('Clicked day:', this.querySelector('.day-number').textContent);
+            });
+        });
+    </script>
+</body>
+</html>
