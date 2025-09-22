@@ -356,11 +356,17 @@ class HouseholdAuth {
         this.app.syncManager = new SyncManager(this.app);
         this.app.syncManager.enableRealTimeSync();
 
+        // Initial cloud sync check
+        this.app.checkCloudSync();
+
         // Update time every minute
         setInterval(() => this.app.updateTime(), 60000);
 
         // Maintain recurring bills daily
         setInterval(() => this.app.maintainRecurringBills(), 24 * 60 * 60 * 1000);
+
+        // Check for cloud updates every 30 seconds
+        setInterval(() => this.app.checkCloudSync(), 30000);
 
         this.app.showToast(`Welcome back, ${this.currentUser}!`);
     }

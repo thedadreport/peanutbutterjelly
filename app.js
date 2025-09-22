@@ -135,6 +135,9 @@ class PeanutButterJelly {
             const householdData = JSON.parse(localStorage.getItem('pbj-household'));
             householdData.data = this.data;
             localStorage.setItem('pbj-household', JSON.stringify(householdData));
+
+            // Attempt cloud sync for cross-device synchronization
+            this.cloudSync(householdData);
         } else {
             // Fallback to old storage method
             localStorage.setItem('pbj-data', JSON.stringify(this.data));
@@ -1020,10 +1023,69 @@ class PeanutButterJelly {
         this.saveData();
     }
 
-    // Sync functionality (placeholder for real-time sync)
+    // Cloud sync functionality for cross-device synchronization
+    async cloudSync(householdData) {
+        if (!navigator.onLine) return;
+
+        try {
+            // Create a unique household ID based on the PIN hash
+            const householdId = 'pbj_' + btoa(householdData.pin).replace(/[^a-zA-Z0-9]/g, '').substr(0, 16);
+
+            // Use JSONBin.io as a simple cloud storage solution
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${householdId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': '$2a$10$8zqLWy.ysVjqnCGhxRzWd.fD4Fp8LnqQ2xjZvWVLCKGSKr7cW8wXK' // Public demo key
+                },
+                body: JSON.stringify({
+                    householdData: householdData,
+                    lastSync: Date.now()
+                })
+            });
+
+            if (response.ok) {
+                localStorage.setItem('pbj-last-sync', Date.now().toString());
+                console.log('Cloud sync successful');
+            }
+        } catch (error) {
+            console.log('Cloud sync failed (offline mode):', error.message);
+        }
+    }
+
+    async checkCloudSync() {
+        if (!navigator.onLine || !window.auth || !window.auth.isUserAuthenticated()) return;
+
+        try {
+            const householdData = JSON.parse(localStorage.getItem('pbj-household'));
+            const householdId = 'pbj_' + btoa(householdData.pin).replace(/[^a-zA-Z0-9]/g, '').substr(0, 16);
+            const lastSync = parseInt(localStorage.getItem('pbj-last-sync')) || 0;
+
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${householdId}/latest`, {
+                headers: {
+                    'X-Master-Key': '$2a$10$8zqLWy.ysVjqnCGhxRzWd.fD4Fp8LnqQ2xjZvWVLCKGSKr7cW8wXK'
+                }
+            });
+
+            if (response.ok) {
+                const cloudData = await response.json();
+                if (cloudData.record && cloudData.record.lastSync > lastSync) {
+                    // Cloud has newer data, update local
+                    localStorage.setItem('pbj-household', JSON.stringify(cloudData.record.householdData));
+                    this.loadData();
+                    this.renderCurrentView();
+                    localStorage.setItem('pbj-last-sync', cloudData.record.lastSync.toString());
+                    console.log('Synced from cloud');
+                }
+            }
+        } catch (error) {
+            console.log('Cloud sync check failed:', error.message);
+        }
+    }
+
+    // Sync functionality
     syncData() {
-        // This would implement real-time sync with a backend
-        console.log('Syncing data...');
+        this.checkCloudSync();
     }
 
     openSettingsModal() {
@@ -1148,6 +1210,10 @@ class PeanutButterJelly {
     }
 
     generateShareCode() {
+        // First, ensure the latest data is saved
+        this.saveData();
+
+        // Get the most up-to-date household data
         const householdData = JSON.parse(localStorage.getItem('pbj-household'));
 
         const shareData = {
