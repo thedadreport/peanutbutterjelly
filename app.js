@@ -22,6 +22,10 @@ class PeanutButterJelly {
         this.setupEventListeners();
         this.updateTime();
         this.calculateCurrentPeriod();
+
+        // Maintain recurring bills
+        this.maintainRecurringBills();
+
         this.renderCurrentView();
 
         // Initialize sync manager
@@ -30,6 +34,9 @@ class PeanutButterJelly {
 
         // Update time every minute
         setInterval(() => this.updateTime(), 60000);
+
+        // Maintain recurring bills daily
+        setInterval(() => this.maintainRecurringBills(), 24 * 60 * 60 * 1000);
     }
 
     // Service Worker Registration
@@ -49,19 +56,46 @@ class PeanutButterJelly {
     loadData() {
         const savedData = localStorage.getItem('pbj-data');
         if (savedData) {
-            const parsed = JSON.parse(savedData);
-            this.data = { ...this.data, ...parsed };
+            try {
+                const parsed = JSON.parse(savedData);
 
-            // Convert date strings back to Date objects
-            if (this.data.payday) {
-                this.data.payday = new Date(this.data.payday);
+                // Merge with defaults to ensure all properties exist
+                this.data = {
+                    ...this.data,
+                    ...parsed
+                };
+
+                // Convert date strings back to Date objects
+                if (this.data.payday) {
+                    this.data.payday = new Date(this.data.payday);
+                }
+
+                if (this.data.bills && Array.isArray(this.data.bills)) {
+                    this.data.bills = this.data.bills.map(bill => ({
+                        ...bill,
+                        dueDate: new Date(bill.dueDate),
+                        createdAt: bill.createdAt ? new Date(bill.createdAt) : new Date(),
+                        frequency: bill.frequency || 'once',
+                        isRecurring: bill.isRecurring !== undefined ? bill.isRecurring : false
+                    }));
+                } else {
+                    this.data.bills = [];
+                }
+
+                // Ensure settings exist
+                if (!this.data.settings) {
+                    this.data.settings = {
+                        householdName: '',
+                        partnerName: '',
+                        notifications: true
+                    };
+                }
+
+                console.log('Data loaded successfully:', this.data);
+            } catch (error) {
+                console.error('Error loading data:', error);
+                this.setupSampleData();
             }
-
-            this.data.bills = this.data.bills.map(bill => ({
-                ...bill,
-                dueDate: new Date(bill.dueDate),
-                createdAt: new Date(bill.createdAt)
-            }));
         } else {
             // First-time setup with sample data
             this.setupSampleData();
@@ -328,10 +362,11 @@ class PeanutButterJelly {
 
         const dueText = this.getBillDueText(bill);
         const statusClass = this.getBillStatusClass(bill);
+        const frequencyIcon = this.getFrequencyIcon(bill.frequency);
 
         billDiv.innerHTML = `
             <div class="bill-info">
-                <div class="bill-name">${bill.name}</div>
+                <div class="bill-name">${bill.name} ${frequencyIcon}</div>
                 <div class="bill-due">${dueText}</div>
             </div>
             <div class="bill-amount">${this.formatCurrency(bill.amount)}</div>
@@ -339,6 +374,20 @@ class PeanutButterJelly {
         `;
 
         return billDiv;
+    }
+
+    getFrequencyIcon(frequency) {
+        switch (frequency) {
+            case 'weekly':
+                return '<span style="opacity: 0.6; font-size: 12px;">🔄7d</span>';
+            case 'biweekly':
+                return '<span style="opacity: 0.6; font-size: 12px;">🔄14d</span>';
+            case 'monthly':
+                return '<span style="opacity: 0.6; font-size: 12px;">🔄30d</span>';
+            case 'once':
+            default:
+                return '<span style="opacity: 0.6; font-size: 12px;">🔸</span>';
+        }
     }
 
     getBillDueText(bill) {
@@ -538,6 +587,15 @@ class PeanutButterJelly {
                         <input type="date" class="form-input" name="dueDate" required>
                     </div>
                     <div class="form-group">
+                        <label class="form-label">Frequency</label>
+                        <select class="form-select" name="frequency" required>
+                            <option value="once">One Time</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="biweekly">Biweekly</option>
+                            <option value="monthly" selected>Monthly</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Category</label>
                         <select class="form-select" name="category" required>
                             <option value="">Select category</option>
@@ -568,15 +626,16 @@ class PeanutButterJelly {
 
     handleAddBill(form) {
         const formData = new FormData(form);
+        const frequency = formData.get('frequency');
         const bill = {
             id: Date.now(),
             name: formData.get('name'),
             amount: parseFloat(formData.get('amount')),
             dueDate: new Date(formData.get('dueDate')),
             category: formData.get('category'),
+            frequency: frequency,
             isPaid: false,
-            isRecurring: false,
-            frequency: 'once',
+            isRecurring: frequency !== 'once',
             createdAt: new Date()
         };
 
@@ -585,6 +644,11 @@ class PeanutButterJelly {
         this.closeModal();
         this.renderCurrentView();
         this.showToast(`${bill.name} added successfully`);
+
+        // Generate future instances for recurring bills
+        if (bill.isRecurring) {
+            this.generateRecurringBills(bill);
+        }
     }
 
     closeModal() {
@@ -691,6 +755,89 @@ class PeanutButterJelly {
     showOfflineIndicator() {
         // Implementation for offline indicator
         console.log('App is offline');
+    }
+
+    // Recurring Bill Management
+    generateRecurringBills(originalBill) {
+        const futureInstances = [];
+        const maxInstances = 12; // Generate up to 12 future instances
+        const today = new Date();
+
+        for (let i = 1; i <= maxInstances; i++) {
+            const nextDueDate = this.calculateNextDueDate(originalBill.dueDate, originalBill.frequency, i);
+
+            // Only generate bills for future dates
+            if (nextDueDate > today) {
+                const futureBill = {
+                    ...originalBill,
+                    id: Date.now() + i, // Unique ID
+                    dueDate: nextDueDate,
+                    isPaid: false,
+                    parentBillId: originalBill.id, // Reference to original
+                    generatedAt: new Date()
+                };
+
+                futureInstances.push(futureBill);
+            }
+        }
+
+        // Add future bills to the data
+        this.data.bills.push(...futureInstances);
+        this.saveData();
+
+        console.log(`Generated ${futureInstances.length} future instances for ${originalBill.name}`);
+    }
+
+    calculateNextDueDate(originalDate, frequency, multiplier) {
+        const nextDate = new Date(originalDate);
+
+        switch (frequency) {
+            case 'weekly':
+                nextDate.setDate(originalDate.getDate() + (7 * multiplier));
+                break;
+            case 'biweekly':
+                nextDate.setDate(originalDate.getDate() + (14 * multiplier));
+                break;
+            case 'monthly':
+                nextDate.setMonth(originalDate.getMonth() + multiplier);
+                break;
+            default:
+                return originalDate; // 'once' - no recurrence
+        }
+
+        return nextDate;
+    }
+
+    // Clean up old bills and regenerate recurring ones
+    maintainRecurringBills() {
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+        // Remove old paid bills (older than 6 months)
+        this.data.bills = this.data.bills.filter(bill => {
+            if (bill.isPaid && bill.dueDate < sixMonthsAgo) {
+                return false; // Remove old paid bills
+            }
+            return true;
+        });
+
+        // Check if we need to generate more recurring bills
+        const recurringBills = this.data.bills.filter(bill =>
+            bill.isRecurring && !bill.parentBillId // Only original bills, not generated instances
+        );
+
+        recurringBills.forEach(bill => {
+            const existingFutureBills = this.data.bills.filter(b =>
+                b.parentBillId === bill.id && b.dueDate > new Date()
+            );
+
+            // If we have fewer than 6 future instances, generate more
+            if (existingFutureBills.length < 6) {
+                this.generateRecurringBills(bill);
+            }
+        });
+
+        this.saveData();
     }
 
     // Sync functionality (placeholder for real-time sync)
