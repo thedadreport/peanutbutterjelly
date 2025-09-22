@@ -923,13 +923,12 @@ class PeanutButterJelly {
                         </button>
                         <small class="form-help" style="color: #ef4444;">This will delete everything and start fresh. Cannot be undone!</small>
                     </div>
-                    ${this.canInstallPWA() ? `
                     <div class="form-group">
                         <button type="button" class="btn btn-secondary btn-full" onclick="installPWA()">
-                            Install App
+                            📱 Install as App
                         </button>
+                        <small class="form-help">Add to home screen for the best experience</small>
                     </div>
-                    ` : ''}
                     <div class="form-group">
                         <button type="button" class="btn btn-primary btn-full" onclick="app.saveSettings()">
                             Save Settings
@@ -1150,9 +1149,21 @@ window.addEventListener('beforeinstallprompt', (e) => {
     deferredPrompt = e;
     console.log('PWA install prompt available');
 
-    // Show install banner if user isn't authenticated yet
-    if (!window.auth || !window.auth.isUserAuthenticated()) {
-        showInstallBanner();
+    // Show install banner
+    showInstallBanner();
+});
+
+// Debug PWA status
+window.addEventListener('DOMContentLoaded', () => {
+    console.log('PWA Debug Info:');
+    console.log('- Service Worker supported:', 'serviceWorker' in navigator);
+    console.log('- HTTPS:', location.protocol === 'https:');
+    console.log('- Manifest link:', !!document.querySelector('link[rel="manifest"]'));
+    console.log('- User Agent:', navigator.userAgent);
+
+    // Check if already installed
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('- Already running as PWA');
     }
 });
 
