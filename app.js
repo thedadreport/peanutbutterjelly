@@ -63,6 +63,34 @@ class PeanutButterJelly {
 
     // Data Management
     loadData() {
+        // Check if we're using the household auth system
+        if (window.auth && window.auth.isUserAuthenticated()) {
+            // Load from household data, which was already loaded by auth system
+            const householdData = JSON.parse(localStorage.getItem('pbj-household'));
+            if (householdData && householdData.data) {
+                this.data = { ...this.data, ...householdData.data };
+
+                // Convert date strings back to Date objects
+                if (this.data.payday) {
+                    this.data.payday = new Date(this.data.payday);
+                }
+
+                if (this.data.bills && Array.isArray(this.data.bills)) {
+                    this.data.bills = this.data.bills.map(bill => ({
+                        ...bill,
+                        dueDate: new Date(bill.dueDate),
+                        createdAt: bill.createdAt ? new Date(bill.createdAt) : new Date(),
+                        frequency: bill.frequency || 'once',
+                        isRecurring: bill.isRecurring !== undefined ? bill.isRecurring : false
+                    }));
+                }
+
+                console.log('Household data loaded successfully:', this.data);
+                return;
+            }
+        }
+
+        // Fallback to old storage method for backward compatibility
         const savedData = localStorage.getItem('pbj-data');
         if (savedData) {
             try {
@@ -91,23 +119,11 @@ class PeanutButterJelly {
                     this.data.bills = [];
                 }
 
-                // Ensure settings exist
-                if (!this.data.settings) {
-                    this.data.settings = {
-                        householdName: '',
-                        partnerName: '',
-                        notifications: true
-                    };
-                }
-
-                console.log('Data loaded successfully:', this.data);
+                console.log('Legacy data loaded successfully:', this.data);
             } catch (error) {
                 console.error('Error loading data:', error);
-                this.setupSampleData();
+                // Don't set up sample data here - let the auth system handle it
             }
-        } else {
-            // First-time setup with sample data
-            this.setupSampleData();
         }
     }
 

@@ -204,7 +204,8 @@ class HouseholdAuth {
                     partner1: formData.get('partner1'),
                     partner2: formData.get('partner2'),
                     notifications: true
-                }
+                },
+                lastModified: Date.now()
             }
         };
 
